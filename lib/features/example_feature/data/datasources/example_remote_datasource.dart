@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'package:flutter_app/core/utils/constants.dart';
+
 abstract class ExampleRemoteDataSource {
   Future<Map<String, dynamic>> fetchExample();
 
@@ -16,7 +18,7 @@ class ExampleRemoteDataSourceImpl implements ExampleRemoteDataSource {
     Uri? baseEndpoint,
   })  : _client = client ?? http.Client(),
         _baseEndpoint = baseEndpoint ??
-            Uri.parse('https://jsonplaceholder.typicode.com/todos/');
+            Uri.parse(AppConstants.exampleApiBaseUrl);
 
   final http.Client _client;
   final Uri _baseEndpoint;
