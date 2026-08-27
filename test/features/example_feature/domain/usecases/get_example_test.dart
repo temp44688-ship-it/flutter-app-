@@ -1,25 +1,54 @@
+import 'package:dartz/dartz.dart';
+import 'package:flutter_app/core/errors/failures.dart';
+import 'package:flutter_app/features/example_feature/domain/entities/example_entity.dart';
+import 'package:flutter_app/features/example_feature/domain/repositories/example_repository.dart';
+import 'package:flutter_app/features/example_feature/domain/usecases/get_example.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 
-import 'package:example_feature_app/features/example_feature/domain/entities/example_entity.dart';
-import 'package:example_feature_app/features/example_feature/domain/repositories/example_repository.dart';
-import 'package:example_feature_app/features/example_feature/domain/usecases/get_example.dart';
+import 'get_example_test.mocks.dart';
 
-class _FakeExampleRepository implements ExampleRepository {
-  _FakeExampleRepository(this.example);
-
-  final ExampleEntity example;
-
-  @override
-  Future<ExampleEntity> getExample() async => example;
-}
-
+@GenerateNiceMocks([MockSpec<ExampleRepository>()])
 void main() {
-  test('GetExample retourne l’entité fournie par le repository', () async {
-    const expected = ExampleEntity(id: '1', title: 'Example');
-    final useCase = GetExample(_FakeExampleRepository(expected));
+  late GetExampleById usecase;
+  late MockExampleRepository mockRepository;
 
-    final result = await useCase();
+  setUp(() {
+    mockRepository = MockExampleRepository();
+    usecase = GetExampleById(mockRepository);
+  });
 
-    expect(result, same(expected));
+  const tId = '1';
+  const tExample = ExampleEntity(id: tId, title: 'Test');
+  const tParams = GetExampleParams(id: tId);
+
+  test('should get example from the repository', () async {
+    // arrange
+    when(mockRepository.getExampleById(any))
+        .thenAnswer((_) async => const Right(tExample));
+
+    // act
+    final result = await usecase(tParams);
+
+    // assert
+    expect(result, const Right(tExample));
+    verify(mockRepository.getExampleById(tId));
+    verifyNoMoreInteractions(mockRepository);
+  });
+
+  test('should return failure when repository fails', () async {
+    // arrange
+    when(mockRepository.getExampleById(any)).thenAnswer(
+      (_) async => const Left(ServerFailure(message: 'Server error')),
+    );
+
+    // act
+    final result = await usecase(tParams);
+
+    // assert
+    expect(result, isA<Left<Failure, ExampleEntity>>());
+    verify(mockRepository.getExampleById(tId));
+    verifyNoMoreInteractions(mockRepository);
   });
 }

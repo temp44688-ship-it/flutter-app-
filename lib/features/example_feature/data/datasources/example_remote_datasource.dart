@@ -4,21 +4,32 @@ import 'package:http/http.dart' as http;
 
 abstract class ExampleRemoteDataSource {
   Future<Map<String, dynamic>> fetchExample();
+
+  Future<Map<String, dynamic>> fetchExampleById(String id) {
+    return fetchExample();
+  }
 }
 
 class ExampleRemoteDataSourceImpl implements ExampleRemoteDataSource {
   ExampleRemoteDataSourceImpl({
     http.Client? client,
-    Uri? endpoint,
+    Uri? baseEndpoint,
   })  : _client = client ?? http.Client(),
-        _endpoint = endpoint ?? Uri.parse('https://jsonplaceholder.typicode.com/todos/1');
+        _baseEndpoint = baseEndpoint ??
+            Uri.parse('https://jsonplaceholder.typicode.com/todos/');
 
   final http.Client _client;
-  final Uri _endpoint;
+  final Uri _baseEndpoint;
 
   @override
-  Future<Map<String, dynamic>> fetchExample() async {
-    final response = await _client.get(_endpoint).timeout(
+  Future<Map<String, dynamic>> fetchExample() {
+    return fetchExampleById('1');
+  }
+
+  @override
+  Future<Map<String, dynamic>> fetchExampleById(String id) async {
+    final endpoint = _baseEndpoint.resolve(id);
+    final response = await _client.get(endpoint).timeout(
           const Duration(seconds: 10),
         );
 

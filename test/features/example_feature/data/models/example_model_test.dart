@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:example_feature_app/features/example_feature/data/models/example_model.dart';
+import 'package:flutter_app/features/example_feature/data/models/example_model.dart';
 
 void main() {
   group('ExampleModel', () {

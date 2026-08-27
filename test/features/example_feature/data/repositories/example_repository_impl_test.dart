@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:example_feature_app/features/example_feature/data/datasources/example_remote_datasource.dart';
-import 'package:example_feature_app/features/example_feature/data/repositories/example_repository_impl.dart';
+import 'package:flutter_app/features/example_feature/data/datasources/example_remote_datasource.dart';
+import 'package:flutter_app/features/example_feature/data/repositories/example_repository_impl.dart';
 
 class _FakeRemoteDataSource implements ExampleRemoteDataSource {
   _FakeRemoteDataSource({this.response, this.error});

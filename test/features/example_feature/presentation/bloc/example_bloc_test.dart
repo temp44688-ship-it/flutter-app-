@@ -1,16 +1,23 @@
+import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:example_feature_app/features/example_feature/domain/entities/example_entity.dart';
-import 'package:example_feature_app/features/example_feature/domain/repositories/example_repository.dart';
-import 'package:example_feature_app/features/example_feature/domain/usecases/get_example.dart';
-import 'package:example_feature_app/features/example_feature/presentation/bloc/example_bloc.dart';
-import 'package:example_feature_app/features/example_feature/presentation/bloc/example_event.dart';
-import 'package:example_feature_app/features/example_feature/presentation/bloc/example_state.dart';
+import 'package:flutter_app/core/errors/failures.dart';
+import 'package:flutter_app/features/example_feature/domain/entities/example_entity.dart';
+import 'package:flutter_app/features/example_feature/domain/repositories/example_repository.dart';
+import 'package:flutter_app/features/example_feature/domain/usecases/get_example.dart';
+import 'package:flutter_app/features/example_feature/presentation/bloc/example_bloc.dart';
+import 'package:flutter_app/features/example_feature/presentation/bloc/example_event.dart';
+import 'package:flutter_app/features/example_feature/presentation/bloc/example_state.dart';
 
 class _SuccessRepository implements ExampleRepository {
   @override
   Future<ExampleEntity> getExample() async {
     return const ExampleEntity(id: '1', title: 'Example');
+  }
+
+  @override
+  Future<Either<Failure, ExampleEntity>> getExampleById(String id) async {
+    return const Right(ExampleEntity(id: '1', title: 'Example'));
   }
 }
 
@@ -18,6 +25,11 @@ class _FailureRepository implements ExampleRepository {
   @override
   Future<ExampleEntity> getExample() async {
     throw StateError('network failure');
+  }
+
+  @override
+  Future<Either<Failure, ExampleEntity>> getExampleById(String id) async {
+    return const Left(ServerFailure(message: 'network failure'));
   }
 }
 

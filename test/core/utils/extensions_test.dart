@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:example_feature_app/core/utils/extensions.dart';
+import 'package:flutter_app/core/utils/extensions.dart';
 
 void main() {
   group('StringExtensions', () {

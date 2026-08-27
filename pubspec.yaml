@@ -1,4 +1,4 @@
-name: example_feature_app
+name: flutter_app
 description: Example Flutter feature with clean architecture and real HTTP data.
 publish_to: 'none'
 version: 1.0.0+1
@@ -10,11 +10,14 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.2.2
+  dartz: ^0.10.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  mockito: ^5.4.4
+  build_runner: ^2.4.13
 
 flutter:
   uses-material-design: true
