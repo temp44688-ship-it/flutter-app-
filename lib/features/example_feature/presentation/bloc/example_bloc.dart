@@ -1,26 +1,50 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_app/features/example_feature/domain/usecases/get_example.dart';
-import 'package:flutter_app/features/example_feature/presentation/bloc/example_event.dart';
-import 'package:flutter_app/features/example_feature/presentation/bloc/example_state.dart';
+import 'dart:async';
 
-class ExampleBloc extends Bloc<ExampleEvent, ExampleState> {
-  ExampleBloc(this._getExampleById) : super(const ExampleInitial()) {
-    on<ExampleLoadRequested>(_onLoadRequested);
+import '../../domain/usecases/get_example.dart';
+import 'example_event.dart';
+import 'example_state.dart';
+
+class ExampleBloc {
+  ExampleBloc(this.getExample);
+
+  final GetExample getExample;
+  final StreamController<ExampleState> _stateController =
+      StreamController<ExampleState>.broadcast();
+
+  ExampleState _state = const ExampleInitial();
+
+  ExampleState get state => _state;
+  Stream<ExampleState> get stream => _stateController.stream;
+
+  Future<void> add(ExampleEvent event) async {
+    if (event is! GetExampleRequested) {
+      return;
+    }
+
+    _emit(const ExampleLoading());
+    try {
+      final example = await getExample();
+      _emit(ExampleLoaded(example));
+    } catch (error) {
+      _emit(ExampleError(_messageFrom(error)));
+    }
   }
 
-  final GetExampleById _getExampleById;
+  Future<void> close() async {
+    await _stateController.close();
+  }
 
-  Future<void> _onLoadRequested(
-    ExampleLoadRequested event,
-    Emitter<ExampleState> emit,
-  ) async {
-    emit(const ExampleLoading());
+  void _emit(ExampleState nextState) {
+    if (_stateController.isClosed) {
+      return;
+    }
 
-    final result = await _getExampleById(GetExampleParams(id: event.id));
+    _state = nextState;
+    _stateController.add(nextState);
+  }
 
-    result.fold(
-      (failure) => emit(ExampleError(failure.message)),
-      (example) => emit(ExampleLoaded(example)),
-    );
+  String _messageFrom(Object error) {
+    final message = error.toString().replaceFirst('Exception: ', '');
+    return message.isEmpty ? 'Une erreur inconnue est survenue.' : message;
   }
 }

@@ -1,46 +1,49 @@
-import 'package:flutter_app/features/example_feature/domain/entities/example_entity.dart';
+import 'dart:convert';
 
-/// Data transfer object for Example.
-///
-/// Used to parse JSON from the API and convert to/from [ExampleEntity].
-class ExampleModel extends ExampleEntity {
-  const ExampleModel({
-    required super.id,
-    required super.title,
-    super.description,
-  });
+import 'package:http/http.dart' as http;
 
-  factory ExampleModel.fromJson(Map<String, dynamic> json) {
-    return ExampleModel(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      description: json['description'] as String?,
-    );
+abstract class ExampleRemoteDataSource {
+  Future<Map<String, dynamic>> fetchExample();
+}
+
+class ExampleRemoteDataSourceImpl implements ExampleRemoteDataSource {
+  ExampleRemoteDataSourceImpl({
+    http.Client? client,
+    Uri? endpoint,
+  })  : _client = client ?? http.Client(),
+        _endpoint = endpoint ?? Uri.parse('https://jsonplaceholder.typicode.com/todos/1');
+
+  final http.Client _client;
+  final Uri _endpoint;
+
+  @override
+  Future<Map<String, dynamic>> fetchExample() async {
+    final response = await _client.get(_endpoint).timeout(
+          const Duration(seconds: 10),
+        );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ExampleRemoteDataSourceException(
+        'La requête a échoué avec le statut HTTP ${response.statusCode}.',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw const ExampleRemoteDataSourceException(
+        'La réponse distante n’a pas le format JSON attendu.',
+      );
+    }
+
+    return decoded;
   }
+}
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'title': title,
-      'description': description,
-    };
-  }
+class ExampleRemoteDataSourceException implements Exception {
+  const ExampleRemoteDataSourceException(this.message);
 
-  /// Convert model to domain entity.
-  ExampleEntity toEntity() {
-    return ExampleEntity(
-      id: id,
-      title: title,
-      description: description,
-    );
-  }
+  final String message;
 
-  /// Create model from domain entity.
-  factory ExampleModel.fromEntity(ExampleEntity entity) {
-    return ExampleModel(
-      id: entity.id,
-      title: entity.title,
-      description: entity.description,
-    );
-  }
+  @override
+  String toString() => message;
 }

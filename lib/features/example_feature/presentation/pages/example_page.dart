@@ -1,31 +1,42 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_app/features/example_feature/presentation/bloc/example_bloc.dart';
-import 'package:flutter_app/features/example_feature/presentation/bloc/example_event.dart';
-import 'package:flutter_app/features/example_feature/presentation/bloc/example_state.dart';
 
-class ExamplePage extends StatelessWidget {
-  const ExamplePage({super.key});
+import '../bloc/example_bloc.dart';
+import '../bloc/example_event.dart';
+import '../widgets/example_widget.dart';
+
+class ExamplePage extends StatefulWidget {
+  const ExamplePage({
+    required this.bloc,
+    super.key,
+  });
+
+  final ExampleBloc bloc;
+
+  @override
+  State<ExamplePage> createState() => _ExamplePageState();
+}
+
+class _ExamplePageState extends State<ExamplePage> {
+  @override
+  void initState() {
+    super.initState();
+    widget.bloc.add(const GetExampleRequested());
+  }
+
+  @override
+  void dispose() {
+    widget.bloc.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Example')),
-      body: BlocBuilder<ExampleBloc, ExampleState>(
-        builder: (context, state) {
-          return switch (state) {
-            ExampleInitial() => const Center(child: Text('Press button to load')),
-            ExampleLoading() => const Center(child: CircularProgressIndicator()),
-            ExampleLoaded(:final example) => Center(child: Text(example.title)),
-            ExampleError(:final message) => Center(child: Text('Error: $message')),
-          };
-        },
+      appBar: AppBar(
+        title: const Text('Example Feature'),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          context.read<ExampleBloc>().add(const ExampleLoadRequested('1'));
-        },
-        child: const Icon(Icons.refresh),
+      body: Center(
+        child: ExampleWidget(bloc: widget.bloc),
       ),
     );
   }
