@@ -1,23 +1,26 @@
-import '../../domain/usecases/get_example.dart';
-import 'example_event.dart';
-import 'example_state.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_app/features/example_feature/domain/usecases/get_example.dart';
+import 'package:flutter_app/features/example_feature/presentation/bloc/example_event.dart';
+import 'package:flutter_app/features/example_feature/presentation/bloc/example_state.dart';
 
-class ExampleBloc {
-  ExampleBloc(this.getExample);
+class ExampleBloc extends Bloc<ExampleEvent, ExampleState> {
+  ExampleBloc(this._getExampleById) : super(const ExampleInitial()) {
+    on<ExampleLoadRequested>(_onLoadRequested);
+  }
 
-  final GetExample getExample;
-  ExampleState state = const ExampleInitial();
+  final GetExampleById _getExampleById;
 
-  Future<void> add(ExampleEvent event) async {
-    if (event is! GetExampleRequested) {
-      return;
-    }
+  Future<void> _onLoadRequested(
+    ExampleLoadRequested event,
+    Emitter<ExampleState> emit,
+  ) async {
+    emit(const ExampleLoading());
 
-    state = const ExampleLoading();
-    try {
-      state = ExampleLoaded(await getExample());
-    } catch (error) {
-      state = ExampleError(error.toString());
-    }
+    final result = await _getExampleById(GetExampleParams(id: event.id));
+
+    result.fold(
+      (failure) => emit(ExampleError(failure.message)),
+      (example) => emit(ExampleLoaded(example)),
+    );
   }
 }
