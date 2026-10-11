@@ -1,0 +1,15 @@
+
+node_modules/
+.expo/
+*.db
+*.db-*
+.env
+.env.*
+!.env.example
+*.zip
+coverage/
+.expo-router-check/
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties

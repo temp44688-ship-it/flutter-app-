@@ -1,0 +1,21 @@
+jest.mock('../src/database/connection', () => ({ getDatabase: jest.fn() }));
+jest.mock('../src/features/patients/patientRepository', () => ({ PatientRepository: jest.fn() }));
+jest.mock('../src/features/medications/medicationRepository', () => ({ MedicationRepository: jest.fn() }));
+jest.mock('../src/features/consultations/consultationRepository', () => ({ ConsultationRepository: jest.fn() }));
+jest.mock('../src/services/export/exportService', () => ({ shareMedicalReport: jest.fn() }));
+import { act, renderHook, waitFor } from '@testing-library/react-native';
+import { getDatabase } from '../src/database/connection';
+import { PatientRepository } from '../src/features/patients/patientRepository';
+import { MedicationRepository } from '../src/features/medications/medicationRepository';
+import { ConsultationRepository } from '../src/features/consultations/consultationRepository';
+import { shareMedicalReport } from '../src/services/export/exportService';
+import { useMedicalReport } from '../src/hooks/useMedicalReport';
+const database = {};
+const patient = { id: 'p1', givenName: 'Ada' };
+describe('useMedicalReport', () => {
+  beforeEach(() => { jest.clearAllMocks(); (getDatabase as jest.Mock).mockResolvedValue(database); (PatientRepository as jest.Mock).mockImplementation(() => ({ getById: jest.fn().mockResolvedValue(patient), list: jest.fn().mockResolvedValue([patient]) })); (MedicationRepository as jest.Mock).mockImplementation(() => ({ listByPatient: jest.fn().mockResolvedValue([]) })); (ConsultationRepository as jest.Mock).mockImplementation(() => ({ listByPatient: jest.fn().mockResolvedValue([]) })); (shareMedicalReport as jest.Mock).mockResolvedValue(undefined); });
+  it('reports success after loading and sharing the report', async () => { const view = renderHook(() => useMedicalReport()); await act(async () => { await view.result.current.share('p1'); }); await waitFor(() => expect(view.result.current.success).toBe(true)); expect(view.result.current.error).toBeNull(); expect(shareMedicalReport).toHaveBeenCalled(); });
+  it('reports a user-friendly error when the database fails', async () => { (getDatabase as jest.Mock).mockRejectedValue(new Error('locked')); const view = renderHook(() => useMedicalReport()); await act(async () => { await view.result.current.share('p1'); }); expect(view.result.current.error).toBe('Le rapport médical n’a pas pu être partagé.'); expect(view.result.current.success).toBe(false); });
+  it('keeps loading true until a slow share completes', async () => { let resolveShare!: () => void; (shareMedicalReport as jest.Mock).mockReturnValue(new Promise<void>((resolve) => { resolveShare = resolve; })); const view = renderHook(() => useMedicalReport()); let pending!: Promise<void>; await act(async () => { pending = view.result.current.share('p1'); }); expect(view.result.current.isLoading).toBe(true); await act(async () => { resolveShare(); await pending; }); expect(view.result.current.isLoading).toBe(false); });
+  it('reports a missing patient as an error', async () => { (PatientRepository as jest.Mock).mockImplementation(() => ({ getById: jest.fn().mockResolvedValue(null), list: jest.fn().mockResolvedValue([]) })); const view = renderHook(() => useMedicalReport()); await act(async () => { await view.result.current.share('p1'); }); expect(view.result.current.error).toContain('rapport médical'); });
+});

@@ -1,0 +1,6 @@
+jest.mock('expo-crypto', () => ({ randomUUID: jest.fn() }));
+import * as Crypto from 'expo-crypto';
+import { DiseaseRepository } from '../src/features/diseases/diseaseRepository';
+const randomUUID = Crypto.randomUUID as jest.MockedFunction<typeof Crypto.randomUUID>;
+const db = { runAsync: jest.fn().mockResolvedValue({}), getFirstAsync: jest.fn(), getAllAsync: jest.fn() };
+describe('DiseaseRepository', () => { beforeEach(() => { jest.clearAllMocks(); randomUUID.mockReturnValue('disease-1'); }); it('creates a disease with a UUID and millisecond timestamps', async () => { const row = { id: 'disease-1', name: 'Hypertension', description: 'Tension élevée', created_at_ms: 1700000000000, updated_at_ms: 1700000000000 }; db.getFirstAsync.mockResolvedValue(row); const result = await new DiseaseRepository(db as never).create({ name: ' Hypertension ', description: 'Tension élevée' }); expect(result.id).toBe('disease-1'); expect(db.runAsync).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO diseases'), 'disease-1', 'Hypertension', 'Tension élevée', expect.any(Number), expect.any(Number)); }); it('lists diseases alphabetically', async () => { db.getAllAsync.mockResolvedValue([]); await new DiseaseRepository(db as never).list(); expect(db.getAllAsync).toHaveBeenCalledWith(expect.stringContaining('ORDER BY name COLLATE NOCASE')); }); });

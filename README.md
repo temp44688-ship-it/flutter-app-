@@ -1,66 +1,69 @@
-# Flutter Clean Architecture
+# MedHistory — dossier médical offline-first
 
-This project is organized around **Clean Architecture** and a feature-first directory structure.
+MedHistory est une application mobile Expo/React Native destinée à conserver un dossier médical local, chiffré et utilisable hors connexion.
 
-## Project Structure
+## Installation stricte
 
-```text
-lib/
-├── core/                         # Shared across all features
-│   ├── errors/                   # Failures (domain) & Exceptions (data)
-│   ├── usecases/                 # Base UseCase abstraction
-│   └── utils/                    # Typedefs, constants, extensions
-├── features/                     # One folder per feature
-│   └── example_feature/
-│       ├── data/                 # DTOs, DataSources, RepositoryImpl
-│       │   ├── datasources/
-│       │   ├── models/
-│       │   └── repositories/
-│       ├── domain/               # Entities, Repository interfaces, UseCases
-│       │   ├── entities/
-│       │   ├── repositories/
-│       │   └── usecases/
-│       └── presentation/         # BLoC, Pages, Widgets
-│           ├── bloc/
-│           ├── pages/
-│           └── widgets/
-└── main.dart
-```
-
-## Dependency Rule
-
-The **Domain** layer knows nothing about frameworks or infrastructure. **Use cases** depend on the Domain layer, **Data** depends on Domain and the use-case contracts, and **Presentation** depends on Domain and Use Cases. Dependencies must point inward toward the Domain layer; the Domain layer must remain framework-agnostic.
-
-## Getting Started
+Pré-requis : Node.js 22+, npm et un environnement de build iOS/Android pour les modules natifs.
 
 ```bash
-flutter pub get
-flutter pub run build_runner build --delete-conflicting-outputs
-flutter run
+npm ci
+npm run typecheck
+npm test
 ```
 
-## Testing
+La commande `npm ci` utilise exclusivement `package-lock.json` afin d’obtenir une installation reproductible. Ne jamais committer `node_modules/`, les builds ou des données patient.
+
+## Architecture
+
+- **Présentation** : routes Expo Router dans `app/` et composants React Native dans `src/components/`.
+- **Hooks** : `src/hooks/` expose `data`, `isLoading`, `error` et les actions métier. L’UI ne contient ni SQL, ni accès direct à SecureStore, SQLite ou aux repositories.
+- **Domaine** : repositories typés dans `src/features/` pour patients, médicaments, consultations, maladies, prescriptions et pièces jointes.
+- **Persistance** : `expo-sqlite` configuré avec SQLCipher AES-256, clé 256 bits conservée exclusivement dans `expo-secure-store`, clés étrangères activées et FTS5 pour la recherche hors ligne.
+- **Sécurité** : biométrie avec fallback vers le code de l’appareil, session mémoire du coffre, stockage privé des pièces jointes, sauvegarde validée par la clé avant restauration et effacement complet réversible uniquement par nouvel onboarding.
+- **Design** : thème clair/sombre via `useColorScheme`, couleurs à contraste élevé, textes redimensionnables et zones tactiles d’au moins 56 dp.
+
+## Tests et qualité
 
 ```bash
-flutter test
+npm run typecheck
+npm test
+npm test -- --coverage --coverageReporters=text --coverageReporters=json-summary
+npm run router:check
 ```
 
-## Code Generation
+La suite couvre les règles métier, les transactions, les contraintes FK, les triggers FTS5, SQLCipher, onboarding, export PDF, sauvegarde/restauration, data wipe et navigation. Les seuils Jest sont de **80 % statements/lines** et **70 % branches**.
+
+## EAS Build et stores
+
+Le projet est configuré par `app.json` et `eas.json` avec les profils `development`, `preview` et `production`.
 
 ```bash
-flutter pub run build_runner build --delete-conflicting-outputs
+npm install -g eas-cli
+eas login
+eas build:configure
+eas build --profile development --platform android
+eas build --profile preview --platform all
+eas build --profile production --platform all
+eas submit --profile production --platform all
 ```
 
-## Dependencies
+Avant un build store : vérifier les identifiants natifs, les certificats EAS, les permissions biométriques, le plugin SQLCipher et les assets dans `assets/`. Les données de production ne doivent jamais être incluses dans l’archive ou les logs de build.
 
-| Package | Purpose |
-|---|---|
-| `flutter_bloc` | State management |
-| `get_it` + `injectable` | Dependency injection |
-| `dartz` | Functional programming with `Either` |
-| `dio` | HTTP client |
-| `go_router` | Navigation |
-| `freezed` | Immutable data classes |
-| `equatable` | Value equality |
+## Configuration native
 
-The example feature currently uses a real HTTP request to JSONPlaceholder and includes unit tests for the core utility, model, repository, use case and BLoC layers.
+- Bundle iOS : `com.medhistory.app`
+- Package Android : `com.medhistory.app`
+- Orientation : portrait verrouillé
+- Splash : `assets/splash.png`
+- Icône : `assets/icon.png`
+- Router : `expo-router/entry`
+- SQLCipher et FTS5 activés par plugin Expo SQLite
+
+## Livraison et maintenance
+
+1. Installer avec `npm ci`.
+2. Exécuter typecheck, tests, couverture et export Router.
+3. Contrôler `app.json`, `eas.json`, les certificats et les identifiants avant publication.
+4. Tester sur un appareil iOS et Android réel : déverrouillage, backup/restore, import incompatible, data wipe, biométrie et mode sombre.
+5. Ne jamais partager une clé SQLCipher, un PIN ou une base médicale non chiffrée.

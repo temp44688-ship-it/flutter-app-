@@ -1,0 +1,12 @@
+import { randomUUID } from 'expo-crypto';
+import type * as SQLite from 'expo-sqlite';
+import type { NewPrescription, Prescription } from '../../types/prescription';
+type Row = { id: string; patient_id: string; consultation_id: string | null; medication_name: string; dosage: string | null; instructions: string | null; prescribed_date_ms: number; notes: string | null; created_at_ms: number; updated_at_ms: number };
+const map = (r: Row): Prescription => ({ id: r.id, patientId: r.patient_id, consultationId: r.consultation_id, medicationName: r.medication_name, dosage: r.dosage, instructions: r.instructions, prescribedDateMs: r.prescribed_date_ms, notes: r.notes, createdAtMs: r.created_at_ms, updatedAtMs: r.updated_at_ms });
+export class PrescriptionRepository {
+  public constructor(private readonly db: SQLite.SQLiteDatabase) {}
+  public async create(input: NewPrescription): Promise<Prescription> { let created: Prescription | null = null; await this.db.withTransactionAsync(async () => { const id = randomUUID(); const now = Date.now(); await this.db.runAsync('INSERT INTO prescriptions (id, patient_id, consultation_id, medication_name, dosage, instructions, prescribed_date_ms, notes, created_at_ms, updated_at_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', id, input.patientId, input.consultationId, input.medicationName.trim(), input.dosage, input.instructions, input.prescribedDateMs, input.notes, now, now); created = map((await this.db.getFirstAsync<Row>('SELECT * FROM prescriptions WHERE id = ?', id))!); }); if (!created) throw new Error('La prescription n’a pas pu être enregistrée.'); return created; }
+  public async getById(id: string): Promise<Prescription | null> { const row = await this.db.getFirstAsync<Row>('SELECT * FROM prescriptions WHERE id = ?', id); return row ? map(row) : null; }
+  public async listByPatient(patientId: string): Promise<Prescription[]> { const rows = await this.db.getAllAsync<Row>('SELECT * FROM prescriptions WHERE patient_id = ? ORDER BY prescribed_date_ms DESC', patientId); return rows.map(map); }
+  public async search(patientId: string, query: string): Promise<Prescription[]> { const term = query.trim(); if (!term) return this.listByPatient(patientId); const rows = await this.db.getAllAsync<Row>(`SELECT p.* FROM prescriptions p JOIN medical_fts f ON f.entity_id = p.id AND f.entity_type = 'prescription' WHERE p.patient_id = ? AND medical_fts MATCH ? ORDER BY p.prescribed_date_ms DESC`, patientId, `${term.replace(/["']/g, ' ')}*`); return rows.map(map); }
+}

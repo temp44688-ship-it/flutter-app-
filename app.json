@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "MedHistory",
+    "slug": "medhistory",
+    "version": "1.0.0",
+    "scheme": "medhistory",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F8FAFC"
+    },
+    "experiments": { "typedRoutes": true },
+    "plugins": [
+      "expo-router",
+      ["expo-sqlite", { "useSQLCipher": true, "enableFTS": true }],
+      ["expo-local-authentication", { "faceIDPermission": "Autoriser MedHistory à utiliser Face ID pour déverrouiller le coffre médical." }],
+      "@react-native-community/datetimepicker",
+      "expo-asset"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.medhistory.app"
+    },
+    "android": {
+      "package": "com.medhistory.app",
+      "permissions": ["USE_BIOMETRIC"]
+    }
+  }
+}

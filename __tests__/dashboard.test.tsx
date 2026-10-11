@@ -1,0 +1,10 @@
+jest.mock('../src/hooks/useMedications', () => ({ useMedications: jest.fn() }));
+jest.mock('../src/hooks/useConsultations', () => ({ useConsultations: jest.fn() }));
+import React from 'react';
+import { render } from '@testing-library/react-native';
+import { useMedications } from '../src/hooks/useMedications';
+import { useConsultations } from '../src/hooks/useConsultations';
+import DashboardRoute from '../app/(tabs)/index';
+const mockedMedications = useMedications as jest.MockedFunction<typeof useMedications>;
+const mockedConsultations = useConsultations as jest.MockedFunction<typeof useConsultations>;
+describe('Dashboard', () => { it('affiche les traitements actifs et les consultations récentes', async () => { mockedMedications.mockReturnValue({ data: [{ id: 'm1', patientId: 'p1', name: 'Amlodipine', dosage: '5 mg', frequency: 'Chaque matin', route: null, status: 'ACTIVE', startDateMs: 1, endDateMs: null, notes: null, supersedesId: null, createdAtMs: 1, updatedAtMs: 1, stoppedAtMs: null }], isLoading: false, error: null, addMedication: jest.fn(), changeMedication: jest.fn(), stopMedication: jest.fn(), reload: jest.fn() }); mockedConsultations.mockReturnValue({ data: [{ id: 'c1', patientId: 'p1', physicianName: 'Dr Ahmed', specialty: 'Cardiologue', reason: 'Douleur thoracique', diagnosis: null, notes: null, consultationDateMs: 1, createdAtMs: 1, updatedAtMs: 1, diseaseIds: [] }], diseases: [], isLoading: false, error: null, addConsultation: jest.fn(), search: jest.fn(), reload: jest.fn() }); const view = await render(React.createElement(DashboardRoute)); expect(view.getByText('Traitements actuels')).toBeTruthy(); expect(view.getByText('Amlodipine')).toBeTruthy(); expect(view.getByText('Dernières consultations')).toBeTruthy(); expect(view.getByText('Dr Ahmed')).toBeTruthy(); }); });

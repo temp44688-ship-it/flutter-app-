@@ -1,0 +1,32 @@
+{
+  "name": "medhistory",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "jest --runInBand",
+    "router:check": "expo export --platform ios --platform android --output-dir .expo-router-check"
+  },
+  "dependencies": {
+    "@react-native-community/datetimepicker": "^9.2.1",
+    "@testing-library/react-native": "^14.0.1",
+    "expo": "~53.0.0",
+    "expo-crypto": "~14.1.0",
+    "expo-document-picker": "^57.0.3",
+    "expo-file-system": "^57.0.7",
+    "expo-local-authentication": "~16.0.0",
+    "expo-router": "~5.0.0",
+    "expo-secure-store": "~14.2.0",
+    "expo-sqlite": "~15.2.0",
+    "react": "19.0.0",
+    "react-native": "0.79.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/react": "^19.0.0",
+    "jest": "^29.7.0",
+    "jest-expo": "~53.0.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.8.0"
+  }
+}

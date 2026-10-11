@@ -1,0 +1,4 @@
+export interface Prescription { id: string; patientId: string; consultationId: string | null; medicationName: string; dosage: string | null; instructions: string | null; prescribedDateMs: number; notes: string | null; createdAtMs: number; updatedAtMs: number; }
+export interface Attachment { id: string; patientId: string; consultationId: string | null; prescriptionId: string | null; fileName: string; mimeType: string; fileUri: string; fileSizeBytes: number | null; notes: string | null; createdAtMs: number; updatedAtMs: number; }
+export type NewPrescription = Pick<Prescription, 'patientId' | 'consultationId' | 'medicationName' | 'dosage' | 'instructions' | 'prescribedDateMs' | 'notes'>;
+export type NewAttachment = Pick<Attachment, 'patientId' | 'consultationId' | 'prescriptionId' | 'fileName' | 'mimeType' | 'fileSizeBytes' | 'notes'>;

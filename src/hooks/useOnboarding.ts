@@ -1,0 +1,6 @@
+import { useCallback, useEffect, useState } from 'react';
+import { getDatabase } from '../database/connection';
+import { PatientRepository } from '../features/patients/patientRepository';
+import type { CreatePatientProfile } from '../types/patient';
+import { initializeSecureVault, isOnboardingComplete, markOnboardingComplete } from '../services/onboarding/onboardingService';
+export function useOnboarding() { const [complete, setComplete] = useState<boolean | null>(null); const [isLoading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null); const refresh = useCallback(async () => { setLoading(true); try { setComplete(await isOnboardingComplete()); } catch { setError('Impossible de lire l’état du coffre sécurisé.'); } finally { setLoading(false); } }, []); useEffect(() => { void refresh(); }, [refresh]); const completeOnboarding = useCallback(async (profile: CreatePatientProfile) => { setLoading(true); setError(null); try { await initializeSecureVault(); await new PatientRepository(await getDatabase()).create(profile); await markOnboardingComplete(); setComplete(true); } catch { setError('Le profil sécurisé n’a pas pu être créé. Réessayez.'); throw new Error('Onboarding failed'); } finally { setLoading(false); } }, []); return { complete, isLoading, error, refresh, completeOnboarding }; }

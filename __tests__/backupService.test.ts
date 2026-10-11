@@ -1,0 +1,21 @@
+jest.mock('expo-document-picker', () => ({ getDocumentAsync: jest.fn() }));
+jest.mock('expo-file-system/legacy', () => ({ documentDirectory: 'file:///documents/', copyAsync: jest.fn(), deleteAsync: jest.fn() }));
+jest.mock('expo-sharing', () => ({ isAvailableAsync: jest.fn(), shareAsync: jest.fn() }));
+jest.mock('expo-sqlite', () => ({ openDatabaseAsync: jest.fn() }));
+jest.mock('../src/database/connection', () => ({ getDatabase: jest.fn(), closeDatabase: jest.fn() }));
+jest.mock('../src/database/encryption', () => ({ getOrCreateDatabaseKeyHex: jest.fn().mockResolvedValue('ab'.repeat(32)), sqlCipherKeyPragma: jest.fn().mockReturnValue('PRAGMA key') }));
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import * as SQLite from 'expo-sqlite';
+import { closeDatabase, getDatabase } from '../src/database/connection';
+import { exportEncryptedDatabase, importEncryptedDatabase } from '../src/services/backup/backupService';
+const db = { databasePath: 'file:///sqlite/medhistory.db', execAsync: jest.fn().mockResolvedValue(undefined), getFirstAsync: jest.fn().mockResolvedValue({ ok: 1 }), closeAsync: jest.fn().mockResolvedValue(undefined) };
+const candidate = { execAsync: jest.fn().mockResolvedValue(undefined), getFirstAsync: jest.fn().mockResolvedValue({ ok: 1 }), closeAsync: jest.fn().mockResolvedValue(undefined) };
+describe('backupService', () => {
+  beforeEach(() => { jest.clearAllMocks(); (getDatabase as jest.Mock).mockResolvedValue(db); (Sharing.isAvailableAsync as jest.Mock).mockResolvedValue(true); (DocumentPicker.getDocumentAsync as jest.Mock).mockResolvedValue({ canceled: false, assets: [{ uri: 'content://backup.db' }] }); (SQLite.openDatabaseAsync as jest.Mock).mockResolvedValue(candidate); });
+  it('exports the physical encrypted file through the native share sheet', async () => { await exportEncryptedDatabase(); expect(FileSystem.copyAsync).toHaveBeenCalledWith(expect.objectContaining({ from: db.databasePath, to: expect.stringContaining('MedHistory-backup-') })); expect(Sharing.shareAsync).toHaveBeenCalledWith(expect.stringContaining('MedHistory-backup-'), expect.objectContaining({ mimeType: 'application/octet-stream' })); expect(closeDatabase).toHaveBeenCalled(); });
+  it('does not restore when the user cancels the picker', async () => { (DocumentPicker.getDocumentAsync as jest.Mock).mockResolvedValue({ canceled: true, assets: [] }); await expect(importEncryptedDatabase()).resolves.toBeUndefined(); expect(SQLite.openDatabaseAsync).not.toHaveBeenCalled(); });
+  it('validates the key before replacing the current database', async () => { candidate.execAsync.mockRejectedValueOnce(new Error('wrong key')); await expect(importEncryptedDatabase()).rejects.toThrow('incompatible avec la clé'); expect(FileSystem.copyAsync).toHaveBeenCalledTimes(1); expect(FileSystem.copyAsync).not.toHaveBeenCalledWith(expect.objectContaining({ to: db.databasePath })); expect(FileSystem.deleteAsync).toHaveBeenCalledWith(expect.stringContaining('medhistory-restore-'), { idempotent: true }); });
+  it('closes and replaces the current file only after candidate validation', async () => { await importEncryptedDatabase(); expect(candidate.execAsync).toHaveBeenCalledWith('PRAGMA key'); expect(FileSystem.copyAsync).toHaveBeenCalledWith(expect.objectContaining({ from: expect.stringContaining('medhistory-restore-'), to: db.databasePath })); expect(closeDatabase).toHaveBeenCalled(); });
+});
